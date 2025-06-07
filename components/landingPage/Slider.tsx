@@ -14,7 +14,7 @@ export const BrandSlider: React.FC<BrandSliderProps> = ({ variant, className = '
     const ServiceSliderSettings = {
         infinite: true,
         speed: 5000,
-        slidesToShow: 6,
+        slidesToShow: 3,
         slidesToScroll: 1,
         autoplay: true,
         reverse: true,
@@ -27,7 +27,7 @@ export const BrandSlider: React.FC<BrandSliderProps> = ({ variant, className = '
             {
                 breakpoint: 1024,
                 settings: {
-                    slidesToShow: 5,
+                    slidesToShow: 3,
                 },
             },
             {
@@ -48,7 +48,7 @@ export const BrandSlider: React.FC<BrandSliderProps> = ({ variant, className = '
     const TestimonialSliderSettings = {
         infinite: true,
         speed: 7000,
-        slidesToShow: 5,
+        slidesToShow: 2,
         slidesToScroll: 1,
         autoplay: true,
         reverse: true,
@@ -61,7 +61,7 @@ export const BrandSlider: React.FC<BrandSliderProps> = ({ variant, className = '
             {
                 breakpoint: 1024,
                 settings: {
-                    slidesToShow: 4.5,
+                    slidesToShow: 2,
                 },
             },
             {

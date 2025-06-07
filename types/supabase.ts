@@ -8,22 +8,22 @@ export interface Database {
           id: string
           created_at: string
           updated_at: string
-          email: string
           name: string | null
+          total_credits: number
         }
         Insert: {
           id: string
           created_at?: string
           updated_at?: string
-          email: string
           name?: string | null
+          total_credits?: number
         }
         Update: {
           id?: string
           created_at?: string
           updated_at?: string
-          email?: string
           name?: string | null
+          total_credits?: number
         }
         Relationships: [
           {
@@ -77,6 +77,43 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: "videos_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      payment_history: {
+        Row: {
+          id: string
+          user_id: string
+          amount: number
+          created_at: string
+          updated_at: string
+          stripe_payment_id: string | null
+          description: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          amount: number
+          created_at?: string
+          updated_at?: string
+          stripe_payment_id?: string | null
+          description?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          amount?: number
+          created_at?: string
+          updated_at?: string
+          stripe_payment_id?: string | null
+          description?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credits_user_id_fkey"
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]

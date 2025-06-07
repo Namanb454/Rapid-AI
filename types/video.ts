@@ -37,6 +37,9 @@ export interface SharedVideoProps {
   setLoading: (value: boolean) => void
 }
 
+export type FontName = "Anton-Regular.ttf" | "Roboto-Regular.ttf" | "OpenSans-Regular.ttf" | "Montserrat-Regular.ttf" | "Poppins-Regular.ttf"
+export type ColorName = "red" | "blue" | "green" | "indigo" | "yellow" | "white" | "black"
+
 export interface VideoFormProps {
   textareaLabel: string
   textareaPlaceholder: string
@@ -52,6 +55,12 @@ export interface VideoFormProps {
   loading: boolean
   title: string
   description: string
+  fontName: FontName
+  setFontName: (value: FontName) => void
+  fontBaseColor: ColorName
+  setFontBaseColor: (value: ColorName) => void
+  fontHighlightColor: ColorName
+  setFontHighlightColor: (value: ColorName) => void
 }
 
 export interface VideoPreviewProps {

@@ -3,12 +3,15 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { CheckCircle } from 'lucide-react';
 
-const PricingPlan = ({ title, price, description, features, popular = false }: {
+const PricingPlan = ({ title, price, description, features, popular = false, onSelectPlan, buttonText = "Get Started", disabled = false }: {
     title: string;
     price: string;
     description: string;
     features: string[];
-    popular?: boolean
+    popular?: boolean;
+    onSelectPlan: () => void;
+    buttonText?: string;
+    disabled?: boolean;
 }) => {
     return (
         <Card className={`relative overflow-hidden rounded-3xl ${popular ? 'border-indigo-500 bg-transparent' : 'border-neutral-800 bg-transparent scale-95'}`}>
@@ -28,8 +31,11 @@ const PricingPlan = ({ title, price, description, features, popular = false }: {
                 <p className="text-neutral-400 mb-6 h-10">{description}</p>
                 <Button
                     variant={popular ? "outline" : "default"}
-                    className="w-full mb-6">
-                    Get Started
+                    className="w-full mb-6"
+                    onClick={onSelectPlan}
+                    disabled={disabled}
+                >
+                    {buttonText}
                 </Button>
                 <ul className="space-y-3">
                     {features.map((feature, index) => (

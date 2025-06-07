@@ -3,42 +3,140 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowRight, Clock, Film, Plus, Video, Wand2 } from "lucide-react"
+import { ArrowRight, Clock, Film, Plus, Video, Wand2, Coins } from "lucide-react"
 import { useEffect, useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { Database } from "@/types/supabase"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type Video = Database['public']['Tables']['videos']['Row']
 
 export default function DashboardPage() {
   const [videos, setVideos] = useState<Video[]>([])
+  const [credits, setCredits] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
-    const fetchVideos = async () => {
+    const fetchData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const { data, error } = await supabase
+        // Fetch videos
+        const { data: videosData, error: videosError } = await supabase
           .from('videos')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
 
-        if (error) throw error
-        setVideos(data || [])
+        if (videosError) throw videosError
+        setVideos(videosData || [])
+
+        // Fetch total credits from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('total_credits')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          // PGRST116 means no rows found (expected for new users)
+          throw profileError
+        }
+        setCredits(profileData?.total_credits || 0)
       } catch (error) {
-        console.error('Error fetching videos:', error)
+        console.error('Error fetching data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchVideos()
+    fetchData()
   }, [supabase])
+
+  if (loading) {
+    return (
+      <div className="space-y-6 text-white">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <SidebarTrigger />
+              <h2 className="text-2xl font-bold">Dashboard</h2>
+            </div>
+            <p className="text-muted-foreground">Welcome to your dashboard</p>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* <Card className="bg-card/50">
+              <CardContent className="p-4 flex items-center gap-2">
+                <Coins className="h-5 w-5 text-yellow-500" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Credits</p>
+                  <Skeleton className="h-6 w-12" />
+                </div>
+              </CardContent>
+            </Card> */}
+            <Skeleton className="h-10 w-[120px]" />
+            <Skeleton className="h-10 w-[140px]" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
+              <Film className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16" />
+              <p className="text-xs text-muted-foreground">Videos created with our platform</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Processing</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16" />
+              <p className="text-xs text-muted-foreground">Videos currently being processed</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Processing</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex items-center gap-2">
+              <Coins className="h-5 w-5 text-yellow-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Credits</p>
+                <Skeleton className="h-6 w-12" />
+              </div>
+            </CardContent>
+          </Card>
+          <Skeleton className="h-10 w-[120px]" />
+          <Skeleton className="h-10 w-[140px]" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="col-span-1">
+            <CardHeader>
+              <CardTitle>Recent Videos</CardTitle>
+              <CardDescription>Your recently created videos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed">
+                <div className="flex flex-col items-center gap-1 text-center">
+                  <Video className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-sm font-medium">Loading videos...</p>
+                  <p className="text-xs text-muted-foreground">Please wait while we fetch your videos</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 text-white">
@@ -50,11 +148,27 @@ export default function DashboardPage() {
           </div>
           <p className="text-muted-foreground">Welcome to your dashboard</p>
         </div>
-        <Link href="/dashboard/create">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" /> Create New Video
-          </Button>
-        </Link>
+        <div className="flex items-center gap-4">
+          {/* <Card className="bg-card/50">
+            <CardContent className="p-4 flex items-center gap-2">
+              <Coins className="h-5 w-5 text-yellow-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Credits</p>
+                <p className="text-xl font-bold">{credits}</p>
+              </div>
+            </CardContent>
+          </Card> */}
+          <Link href="/pricing">
+            <Button variant="outline" className="gap-2 text-black hover:bg-white/70">
+              <Coins className="h-4 w-4" /> Buy Credits
+            </Button>
+          </Link>
+          <Link href="/dashboard/create">
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" /> Create New Video
+            </Button>
+          </Link>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
@@ -77,6 +191,18 @@ export default function DashboardPage() {
               {videos.filter(video => video.status === 'processing').length}
             </div>
             <p className="text-xs text-muted-foreground">Videos currently being processed</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Credits</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="p-4 flex items-center gap-2">
+            <Coins className="h-5 w-5 text-yellow-500" />
+            <div>
+              <p className="text-xl font-bold">{credits}</p>
+            </div>
           </CardContent>
         </Card>
       </div>

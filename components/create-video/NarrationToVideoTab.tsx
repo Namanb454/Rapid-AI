@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer"
 import { AlertCircle, Loader2, Video, Wand2 } from "lucide-react"
+import { FontName, ColorName } from "@/types/video"
 
 // Character limits based on duration ranges
 const DURATION_CHAR_LIMITS: Record<string, number> = {
@@ -48,6 +49,9 @@ export default function NarrationToVideoTab({
   const [isCaptioning, setIsCaptioning] = useState<boolean>(false)
   const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false)
   const [videoGenerationStage, setVideoGenerationStage] = useState<string>("")
+  const [fontName, setFontName] = useState<FontName>("Anton-Regular.ttf")
+  const [fontBaseColor, setFontBaseColor] = useState<ColorName>("white")
+  const [fontHighlightColor, setFontHighlightColor] = useState<ColorName>("indigo")
 
   // Update character limit when duration changes
   useEffect(() => {
@@ -186,7 +190,7 @@ export default function NarrationToVideoTab({
     try {
       // Generate video using server action
       setVideoGenerationStage("Sending narration to generate video...")
-      const videoData = await generateVideoFromNarration(script, voice, duration);
+      const videoData = await generateVideoFromNarration(script, voice, duration, fontName, fontBaseColor, fontHighlightColor);
       console.log("Video generation response:", videoData);
 
       // If the API has shifted to using job IDs like the TextToVideo endpoint
@@ -308,6 +312,12 @@ export default function NarrationToVideoTab({
         loading={loading}
         title="Video Description"
         description={`Narration script (${charCount}/${charLimit} characters, ~${getApproxWordCount()}/${getWordLimit()} words)`}
+        fontName={fontName}
+        setFontName={setFontName}
+        fontBaseColor={fontBaseColor}
+        setFontBaseColor={setFontBaseColor}
+        fontHighlightColor={fontHighlightColor}
+        setFontHighlightColor={setFontHighlightColor}
       />
 
       <VideoFields
@@ -325,6 +335,12 @@ export default function NarrationToVideoTab({
         loading={loading}
         title="Music Selection"
         description="Select your best music to add in background"
+        fontName={fontName}
+        setFontName={setFontName}
+        fontBaseColor={fontBaseColor}
+        setFontBaseColor={setFontBaseColor}
+        fontHighlightColor={fontHighlightColor}
+        setFontHighlightColor={setFontHighlightColor}
       />
 
       {generated ? (

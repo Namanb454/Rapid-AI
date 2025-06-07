@@ -1,15 +1,16 @@
 // src/components/create-video/VideoForm.tsx
 "use client"
 
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Play, Speech, Timer, ChevronUp, ChevronDown, Type } from "lucide-react"
+import { VideoFormProps, DurationOption, VoiceOption, FontName, ColorName } from "@/types/video"
+import { JSX } from "react"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Wand2, Loader2, Music, Play, Speech, Timer, ChevronUp, ChevronDown } from "lucide-react"
-import { VideoFormProps, DurationOption, VoiceOption } from "@/types/video"
-import { JSX, useState } from "react"
 
 export default function VideoFields({
     textareaLabel,
@@ -25,48 +26,43 @@ export default function VideoFields({
     isSubmitDisabled,
     loading,
     title,
-    description
+    description,
+    fontName,
+    setFontName,
+    fontBaseColor,
+    setFontBaseColor,
+    fontHighlightColor,
+    setFontHighlightColor
 }: VideoFormProps): JSX.Element {
     const voices: VoiceOption[] = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
     const durations: DurationOption[] = ["30-45", "45-60", "60-90"]
-    const musics = [
-        {
-            'music': "BladeRunner",
-        },
-        {
-            'music': "Snowfall",
-        },
-        {
-            'music': "Another Love",
-        },
-        {
-            'music': "Else-Paris",
-        },
+    const [showAllVoices, setShowAllVoices] = useState(false)
+
+    const fonts: FontName[] = [
+        "Anton-Regular.ttf",
+        "Roboto-Regular.ttf",
+        "OpenSans-Regular.ttf",
+        "Montserrat-Regular.ttf",
+        "Poppins-Regular.ttf"
     ]
 
-    const [showAllVoices, setShowAllVoices] = useState(false);
+    const colors = [
+        { color: "red", dotColor: "red-500" },
+        { color: "blue", dotColor: "blue-500" },
+        { color: "green", dotColor: "green-500" },
+        { color: "indigo", dotColor: "indigo-500" },
+        { color: "yellow", dotColor: "yellow-500" },
+        { color: "white", dotColor: "white" },
+        { color: "black", dotColor: "black" }
+    ]
 
     // Display only first 3 voices or all voices based on state
-    const displayedVoices = showAllVoices ? voices : voices.slice(0, 3);
-
+    const displayedVoices = showAllVoices ? voices : voices.slice(0, 2)
 
     return (
         <Card className="md:col-span-1 bg-neutral-950 text-white border-neutral-800 rounded-3xl">
             <CardContent className="space-y-4 my-6">
-                {/* <Label htmlFor="voice" className="text-lg flex items-center gap-2">
-                    <Music className="bg-indigo-600 p-2 rounded-lg w-8 h-8" />
-                    Music Selection</Label>
-                <div className="grid grid-cols-2 gap-4">
-                    {musics.map((item, index) => {
-                        return (
-                            <div key={index} className="flex gap-2 items-center border border-neutral-800 hover:border-2 hover:border-indigo-500 w-full p-2 mx-auto text-center rounded-lg text-sm">
-                                <Play className="bg-neutral-800 p-2 rounded-lg w-8 h-8" />
-                                {item.music}
-                            </div>
-                        )
-                    })}
-                </div> */}
-                <div className="space-y-2">
+                <div className="space-y-4">
                     <Label htmlFor="voice" className="text-lg flex items-center gap-2">
                         <Speech className="bg-indigo-600 p-2 rounded-lg w-8 h-8" />
                         Voice</Label>
@@ -77,13 +73,13 @@ export default function VideoFields({
                                 type="button"
                                 variant="outline"
                                 className={`flex items-center justify-between w-full py-2 px-3 border bg-neutral-900 ${voice === voiceOption
-                                        ? "border-indigo-500 bg-gradient-to-tr from-black to-indigo-900/20"
-                                        : "border-neutral-800"
+                                    ? "border-indigo-500 bg-gradient-to-tr from-black to-indigo-900/20"
+                                    : "border-neutral-800"
                                     }`}
-                                onClick={() => setVoice(voiceOption as VoiceOption)}
+                                onClick={() => setVoice && setVoice(voiceOption as VoiceOption)}
                             >
                                 <div className="flex items-center space-x-2 w-full">
-                                    <Play className="bg-neutral- rounded-full w-20 h-20" />
+                                    <Play className="bg-neutral-800 rounded-full w-8 h-8" />
                                     <div className="text-left">
                                         <div className="capitalize">{voiceOption}</div>
                                         <div className="text-xs text-neutral-500">OpenAI Voice</div>
@@ -95,7 +91,7 @@ export default function VideoFields({
                             </Button>
                         ))}
                     </div>
-                    {voices.length > 3 && (
+                    {voices.length > 2 && (
                         <Button
                             variant="ghost"
                             className="w-full flex items-center justify-center text-neutral-100 hover:text-neutral-100 mt-2 bg-neutral-800 hover:bg-neutral-900 rounded-3xl"
@@ -120,7 +116,7 @@ export default function VideoFields({
                     </Label>
                     <RadioGroup
                         value={duration}
-                        onValueChange={(value) => setDuration(value as DurationOption)}
+                        onValueChange={(value) => setDuration && setDuration(value as DurationOption)}
                         className="flex flex-wrap gap-4"
                     >
                         {durations.map((option) => (
@@ -130,6 +126,68 @@ export default function VideoFields({
                             </div>
                         ))}
                     </RadioGroup>
+                </div>
+                <div className="space-y-4">
+                    <Label className="text-lg flex items-center gap-2">
+                        <Type className="bg-indigo-600 p-2 rounded-lg w-8 h-8" />
+                        Font Customization
+                    </Label>
+
+                    <div className="grid md:grid-cols-3 gap-3">
+                        <div className="space-y-2">
+                            <Label>Font Family</Label>
+                            <Select value={fontName} onValueChange={(value) => setFontName(value as FontName)}>
+                                <SelectTrigger className="bg-neutral-900 border-neutral-800">
+                                    <SelectValue placeholder="Select font" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
+                                    {fonts.map((font) => (
+                                        <SelectItem key={font} value={font} className="hover:bg-neutral-800">
+                                            {font}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Base Color</Label>
+                            <Select value={fontBaseColor} onValueChange={(value) => setFontBaseColor(value as ColorName)}>
+                                <SelectTrigger className="bg-neutral-900 border-neutral-800">
+                                    <SelectValue placeholder="Select base color" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-neutral-900 border-neutral-800">
+                                    {colors.map((color) => (
+                                        <SelectItem key={color.color} value={color.color} className="hover:bg-neutral-800 text-white">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-4 h-4 rounded-full bg-${color.dotColor}`} />
+                                                <span className="capitalize">{color.color}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Highlight Color</Label>
+                            <Select value={fontHighlightColor} onValueChange={(value) => setFontHighlightColor(value as ColorName)}>
+                                <SelectTrigger className="bg-neutral-900 border-neutral-800">
+                                    <SelectValue placeholder="Select highlight color" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-neutral-900 border-neutral-800">
+                                    {colors.map((color) => (
+                                        <SelectItem key={color.color} value={color.color} className="hover:bg-neutral-800 text-white">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-4 h-4 rounded-full bg-${color.dotColor}`} />
+                                                <span className="capitalize">{color.color}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </div>
                 {error && (
                     <p className="text-sm text-red-500">{error}</p>

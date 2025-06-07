@@ -12,6 +12,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose, DrawerTrigger } from "@/components/ui/drawer"
 import { AlertCircle, Loader2, Video, Wand2 } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
+import { FontName, ColorName } from "@/types/video"
+import Example from "../Example"
+import { useRouter } from "next/navigation"
 
 export default function TextToVideoTab({
   duration,
@@ -26,6 +29,7 @@ export default function TextToVideoTab({
   setLoading
 }: SharedVideoProps): JSX.Element {
   const { user } = useAuth()
+  const router = useRouter()
   const [prompt, setPrompt] = useState<string>("")
   const [narration, setNarration] = useState<string>("")
   const [script, setScript] = useState<any | null>(null)
@@ -39,6 +43,9 @@ export default function TextToVideoTab({
   const [isCaptioning, setIsCaptioning] = useState<boolean>(false)
   const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false)
   const [videoGenerationStage, setVideoGenerationStage] = useState<string>("")
+  const [fontName, setFontName] = useState<FontName>("Anton-Regular.ttf")
+  const [fontBaseColor, setFontBaseColor] = useState<ColorName>("white")
+  const [fontHighlightColor, setFontHighlightColor] = useState<ColorName>("indigo")
 
   const pollJobStatus = async (jobId: string): Promise<any> => {
     const POLLING_INTERVAL = 4000 // 4 seconds
@@ -177,7 +184,7 @@ export default function TextToVideoTab({
     try {
       // Update script with the edited narration
       const updatedScript = { ...script, script: narration }
-      const jobId = await generateVideo(updatedScript, voice, duration)
+      const jobId = await generateVideo(updatedScript, voice, duration, fontName, fontBaseColor, fontHighlightColor)
       console.log("Video generation job created: ", jobId)
 
       setVideoGenerationStage("Video job created, generating video...")
@@ -207,13 +214,19 @@ export default function TextToVideoTab({
         setVideoGenerationStage("Video saved successfully")
       } catch (storeErr) {
         console.error("Error storing video in Supabase:", storeErr)
-        setError(`Video generated but failed to save: ${storeErr instanceof Error ? storeErr.message : "Unknown error"}`)
+        if (storeErr instanceof Error && storeErr.message === 'Insufficient credits') {
+          setError("You don't have enough credits to generate this video. Please purchase more credits.")
+          router.push('/pricing')
+        } else {
+          setError(`Video generated but failed to save: ${storeErr instanceof Error ? storeErr.message : "Unknown error"}`)
+        }
       }
     } catch (err) {
       console.error("Error in video generation process:", err)
       setError(`Failed to generate video: ${err instanceof Error ? err.message : "Unknown error"}`)
     } finally {
       setLoading(false)
+      setIsVideoLoading(false)
     }
   }
 
@@ -241,39 +254,61 @@ export default function TextToVideoTab({
 
   return (
     <div className="md:grid gap-6 md:grid-cols-2 relative md:space-y-0 space-y-5">
-      <VideoForm
-        textareaLabel="Prompt"
-        textareaPlaceholder="A cinematic shot of a futuristic city with flying cars and neon lights..."
-        textareaValue={prompt}
-        onTextareaChange={(e) => setPrompt(e.target.value)}
-        duration={duration}
-        setDuration={setDuration}
-        voice={voice}
-        setVoice={setVoice}
-        error={error}
-        onSubmit={handleGenerateNarration}
-        isSubmitDisabled={!prompt || loading}
-        loading={loading}
-        title="Video Description"
-        description="Describe the video you want to generate in detail"
-      />
+      <div>
+        <div className="">
+          <VideoForm
+            textareaLabel="Prompt"
+            textareaPlaceholder="A cinematic shot of a futuristic city with flying cars and neon lights..."
+            textareaValue={prompt}
+            onTextareaChange={(e) => setPrompt(e.target.value)}
+            duration={duration}
+            setDuration={setDuration}
+            voice={voice}
+            setVoice={setVoice}
+            error={error}
+            onSubmit={handleGenerateNarration}
+            isSubmitDisabled={!prompt || loading}
+            loading={loading}
+            title="Video Description"
+            description="Describe the video you want to generate in detail"
+            fontName={fontName}
+            setFontName={setFontName}
+            fontBaseColor={fontBaseColor}
+            setFontBaseColor={setFontBaseColor}
+            fontHighlightColor={fontHighlightColor}
+            setFontHighlightColor={setFontHighlightColor}
+          />
 
-      <VideoFields
-        textareaLabel="Prompt"
-        textareaPlaceholder="A cinematic shot of a futuristic city with flying cars and neon lights..."
-        textareaValue={prompt}
-        onTextareaChange={(e) => setPrompt(e.target.value)}
-        duration={duration}
-        setDuration={setDuration}
-        voice={voice}
-        setVoice={setVoice}
-        error={error}
-        onSubmit={handleGenerateNarration}
-        isSubmitDisabled={!prompt || loading}
-        loading={loading}
-        title="Music Selection"
-        description="Select your best music to add in background"
-      />
+        </div>
+        <div className="">
+          <VideoFields
+            textareaLabel="Prompt"
+            textareaPlaceholder="A cinematic shot of a futuristic city with flying cars and neon lights..."
+            textareaValue={prompt}
+            onTextareaChange={(e) => setPrompt(e.target.value)}
+            duration={duration}
+            setDuration={setDuration}
+            voice={voice}
+            setVoice={setVoice}
+            error={error}
+            onSubmit={handleGenerateNarration}
+            isSubmitDisabled={!prompt || loading}
+            loading={loading}
+            title="Music Selection"
+            description="Select your best music to add in background"
+            fontName={fontName}
+            setFontName={setFontName}
+            fontBaseColor={fontBaseColor}
+            setFontBaseColor={setFontBaseColor}
+            fontHighlightColor={fontHighlightColor}
+            setFontHighlightColor={setFontHighlightColor}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Example />
+      </div>
 
       {(narration && !showNarrationEditor && !generated) ? (
         <div className="rounded-full w-fit mx-auto col-span-2">

@@ -10,6 +10,37 @@ interface JobStatusResponse {
     captioned_video_url?: string;
 }
 
+async function checkAndDeductCredits(userId: string): Promise<boolean> {
+    const supabase = await createClient()
+
+    // Get user's current credits from the profiles table
+    const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('total_credits')
+        .eq('id', userId)
+        .single()
+
+    if (profileError || !profileData) {
+        throw new Error('Failed to fetch user profile or credits')
+    }
+
+    if (profileData.total_credits < 1) {
+        throw new Error('Insufficient credits')
+    }
+
+    // Deduct one credit from the profiles table
+    const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ total_credits: profileData.total_credits - 1 })
+        .eq('id', userId)
+
+    if (updateError) {
+        throw new Error('Failed to deduct credits')
+    }
+
+    return true
+}
+
 export async function storeVideoInSupabase(
     videoUrl: string,
     userId: string,
@@ -23,6 +54,9 @@ export async function storeVideoInSupabase(
     const supabase = await createClient()
 
     try {
+        // Check and deduct credits before storing video
+        await checkAndDeductCredits(userId)
+
         const { data, error } = await supabase
             .from('videos')
             .insert({
