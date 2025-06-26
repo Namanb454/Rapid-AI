@@ -9,14 +9,26 @@ import { createClient } from "@/utils/supabase/client"
 import { Database } from "@/types/supabase"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatDistanceToNow, format } from 'date-fns';
+import { AlertCircle } from 'lucide-react';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { UserSubscription } from '@/types/subscription';
+import { SubscriptionService } from '@/lib/subscription';
 
 type Video = Database['public']['Tables']['videos']['Row']
 
 export default function DashboardPage() {
   const [videos, setVideos] = useState<Video[]>([])
   const [credits, setCredits] = useState<number>(0)
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const subscriptionService = new SubscriptionService()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +58,11 @@ export default function DashboardPage() {
           throw profileError
         }
         setCredits(profileData?.total_credits || 0)
+
+        // Fetch subscription
+        const userSubscription = await subscriptionService.getUserSubscription(user.id)
+        setSubscription(userSubscription)
+
       } catch (error) {
         console.error('Error fetching data:', error)
       } finally {
@@ -242,6 +259,39 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+      {subscription && (
+        <div className="mb-6 p-4 bg-white rounded-lg shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Subscription Status</h3>
+              <p className="text-sm text-gray-500">Your current plan details</p>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {formatDistanceToNow(new Date(subscription.end_date), { addSuffix: true })}
+                    </span>
+                    {new Date(subscription.end_date).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000 && (
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Your current plan will end on {format(new Date(subscription.end_date), 'MMMM do, yyyy')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="mt-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Credits Remaining:</span>
+              <span className="font-medium">{subscription.credits_remaining}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

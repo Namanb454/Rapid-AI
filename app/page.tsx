@@ -10,67 +10,52 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { easeInOut, motion } from 'framer-motion';
 import { FeatureData } from './data';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
-
-const pricingPlans = [
-  {
-    name: "Basic",
-    price: 10,
-    credits: 5, // Example credits, adjust as needed
-    description: "Perfect for trying out our service",
-    features: [
-      "5 video generations",
-      "Basic support",
-      "Standard quality"
-    ],
-    price_id: "price_1RVxxGRpIUfdSJVVD421AGmz",
-    product_id: "prod_SQpcTE1mmhzHJ3"
-  },
-  {
-    name: "Standard",
-    price: 20,
-    credits: 10, // Example credits, adjust as needed
-    description: "Ideal for growing businesses and content teams",
-    features: [
-      "10 video generations",
-      "Priority support",
-      "High quality"
-    ],
-    popular: true,
-    price_id: "price_1RVyKPRpIUfdSJVVaPuAZume",
-    product_id: "prod_SQq0Ni2aPutK38"
-  },
-  {
-    name: "Pro",
-    price: 30,
-    credits: 15, // Example credits, adjust as needed
-    description: "For professional content creators",
-    features: [
-      "15 video generations",
-      "24/7 support",
-      "Premium quality"
-    ],
-    price_id: "price_1RVyKdRpIUfdSJVV88LujbZ4",
-    product_id: "prod_SQq0SGohju9Iu6"
-  }
-];
+import { SubscriptionService } from '@/lib/subscription';
+import { SubscriptionPlan } from '@/types/subscription';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Home() {
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
+  const subscriptionService = new SubscriptionService();
 
   const [loading, setLoading] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<typeof pricingPlans[0] | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
-  const handlePurchase = (plan: typeof pricingPlans[0]) => {
+  useEffect(() => {
+    loadSubscriptionPlans();
+  }, []);
+
+  const loadSubscriptionPlans = async () => {
+    try {
+      const plans = await subscriptionService.getSubscriptionPlans();
+      setSubscriptionPlans(plans);
+    } catch (error) {
+      console.error('Failed to load subscription plans:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load subscription plans",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredPlans = subscriptionPlans.filter(plan => 
+    billingCycle === 'monthly' ? !plan.is_annual : plan.is_annual
+  );
+
+  const handlePurchase = (plan: SubscriptionPlan) => {
     if (!user) {
       router.push('/login');
       return;
@@ -92,9 +77,9 @@ export default function Home() {
         body: JSON.stringify({
           amount: selectedPlan.price * 100,
           planName: selectedPlan.name,
-          credits: selectedPlan.credits,
+          credits: selectedPlan.credits_per_month,
           userId: user.id,
-          priceId: selectedPlan.price_id,
+          priceId: selectedPlan.stripe_price_id,
         }),
       });
 
@@ -261,21 +246,57 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              {pricingPlans.map((plan) => (
-                <PricingPlan
-                  key={plan.name}
-                  title={plan.name}
-                  price={plan.price.toString()} // Convert price to string as per PricingPlan prop
-                  description={plan.description}
-                  features={plan.features}
-                  popular={plan.popular || false}
-                  onSelectPlan={() => handlePurchase(plan)}
-                  buttonText={loading === plan.name ? "Redirecting..." : "Get Started"}
-                  disabled={loading !== null}
-                />
-              ))}
-            </div>
+            <Tabs defaultValue="monthly" className="w-full" onValueChange={(value) => setBillingCycle(value as 'monthly' | 'annual')}>
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8 rounded-full overflow-hidden">
+                <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                <TabsTrigger value="annual">Annual</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="monthly">
+                <div className="grid md:grid-cols-3 gap-8">
+                  {filteredPlans.map((plan) => (
+                    <PricingPlan
+                      key={plan.id}
+                      title={plan.name}
+                      price={plan.price.toString()}
+                      description={plan.description}
+                      features={[
+                        `${plan.credits_per_month} video generations`,
+                        plan.name === "Pro" ? "24/7 support" : "Priority support",
+                        plan.name === "Pro" ? "Premium quality" : "High quality"
+                      ]}
+                      popular={plan.name === "Pro"}
+                      onSelectPlan={() => handlePurchase(plan)}
+                      buttonText={loading === plan.name ? "Redirecting..." : "Get Started"}
+                      disabled={loading !== null}
+                    />
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="annual">
+                <div className="grid md:grid-cols-3 gap-8">
+                  {filteredPlans.map((plan) => (
+                    <PricingPlan
+                      key={plan.id}
+                      title={plan.name}
+                      price={plan.price.toString()}
+                      description={plan.description}
+                      features={[
+                        `${plan.credits_per_month} video generations`,
+                        plan.name === "Pro" ? "24/7 support" : "Priority support",
+                        plan.name === "Pro" ? "Premium quality" : "High quality",
+                        "Save 20% with annual billing"
+                      ]}
+                      popular={plan.name === "Pro"}
+                      onSelectPlan={() => handlePurchase(plan)}
+                      buttonText={loading === plan.name ? "Redirecting..." : "Get Started"}
+                      disabled={loading !== null}
+                    />
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </section>
       </div>
@@ -285,7 +306,7 @@ export default function Home() {
           <DialogHeader>
             <DialogTitle>Confirm Purchase</DialogTitle>
             <DialogDescription>
-              You are about to purchase {selectedPlan?.credits} credits for ${selectedPlan?.price}.
+              You are about to purchase {selectedPlan?.credits_per_month} credits for ${selectedPlan?.price}.
               You will be redirected to a secure payment page.
             </DialogDescription>
           </DialogHeader>

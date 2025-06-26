@@ -44,10 +44,9 @@ export default function PaymentSuccess() {
             .from('payment_history')
             .select('id')
             .eq('stripe_payment_id', session.id)
-            .single();
+            .maybeSingle();
 
-          if (fetchCreditLogError && fetchCreditLogError.code !== 'PGRST116') {
-            // PGRST116 means no rows found, which is expected for a new payment
+          if (fetchCreditLogError) {
             throw fetchCreditLogError;
           }
 
@@ -68,9 +67,9 @@ export default function PaymentSuccess() {
               .from('profiles')
               .select('total_credits')
               .eq('id', userId)
-              .single() as { data: { total_credits: number } | null; error: any };
+              .maybeSingle() as { data: { total_credits: number } | null; error: any };
 
-            if (fetchProfileError && fetchProfileError.code !== 'PGRST116') {
+            if (fetchProfileError) {
               throw fetchProfileError;
             }
 
