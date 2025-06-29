@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer"
 import { AlertCircle, Loader2, Video, Wand2 } from "lucide-react"
 import { FontName, ColorName } from "@/types/video"
+import { useToast } from "@/hooks/use-toast"
 
 // Character limits based on duration ranges
 const DURATION_CHAR_LIMITS: Record<string, number> = {
@@ -52,6 +53,7 @@ export default function NarrationToVideoTab({
   const [fontName, setFontName] = useState<FontName>("Anton-Regular.ttf")
   const [fontBaseColor, setFontBaseColor] = useState<ColorName>("white")
   const [fontHighlightColor, setFontHighlightColor] = useState<ColorName>("indigo")
+  const { toast } = useToast()
 
   // Update character limit when duration changes
   useEffect(() => {
@@ -92,6 +94,11 @@ export default function NarrationToVideoTab({
           // Check if we've exceeded the time limit
           if (Date.now() - startTime > MAX_POLLING_TIME) {
             setError("Video generation timed out after 3 minutes. Please try again.")
+            toast({
+              title: "Video generation failed",
+              description: "Try again, there might be an issue in generating video. Your credit will not be deducted.",
+              variant: "destructive"
+            })
             reject(new Error("Video generation timed out after 3 minutes"))
             return
           }
@@ -190,7 +197,7 @@ export default function NarrationToVideoTab({
     try {
       // Generate video using server action
       setVideoGenerationStage("Sending narration to generate video...")
-      const videoData = await generateVideoFromNarration(script, voice, duration, fontName, fontBaseColor, fontHighlightColor);
+      const videoData = await generateVideoFromNarration(script, voice, duration, user.id, fontName, fontBaseColor, fontHighlightColor);
       console.log("Video generation response:", videoData);
 
       // If the API has shifted to using job IDs like the TextToVideo endpoint

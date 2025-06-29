@@ -15,6 +15,7 @@ import { useAuth } from "@/context/auth-context"
 import { FontName, ColorName } from "@/types/video"
 import Example from "../Example"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 export default function TextToVideoTab({
   duration,
@@ -46,6 +47,7 @@ export default function TextToVideoTab({
   const [fontName, setFontName] = useState<FontName>("Anton-Regular.ttf")
   const [fontBaseColor, setFontBaseColor] = useState<ColorName>("white")
   const [fontHighlightColor, setFontHighlightColor] = useState<ColorName>("indigo")
+  const { toast } = useToast()
 
   const pollJobStatus = async (jobId: string): Promise<any> => {
     const POLLING_INTERVAL = 4000 // 4 seconds
@@ -66,6 +68,11 @@ export default function TextToVideoTab({
           // Check if we've exceeded the time limit
           if (Date.now() - startTime > MAX_POLLING_TIME) {
             setError("Video generation timed out after 3 minutes. Please try again.")
+            toast({
+              title: "Video generation failed",
+              description: "Try again, there might be an issue in generating video. Your credit will not be deducted.",
+              variant: "destructive"
+            })
             reject(new Error("Video generation timed out after 3 minutes"))
             return
           }
@@ -184,7 +191,7 @@ export default function TextToVideoTab({
     try {
       // Update script with the edited narration
       const updatedScript = { ...script, script: narration }
-      const jobId = await generateVideo(updatedScript, voice, duration, fontName, fontBaseColor, fontHighlightColor)
+      const jobId = await generateVideo(updatedScript, voice, duration, user.id, fontName, fontBaseColor, fontHighlightColor)
       console.log("Video generation job created: ", jobId)
 
       setVideoGenerationStage("Video job created, generating video...")

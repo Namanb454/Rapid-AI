@@ -12,10 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { formatDistanceToNow, format } from 'date-fns';
 import { AlertCircle } from 'lucide-react';
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { UserSubscription } from '@/types/subscription';
 import { SubscriptionService } from '@/lib/subscription';
@@ -166,15 +166,6 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Welcome to your dashboard</p>
         </div>
         <div className="flex items-center gap-4">
-          {/* <Card className="bg-card/50">
-            <CardContent className="p-4 flex items-center gap-2">
-              <Coins className="h-5 w-5 text-yellow-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Credits</p>
-                <p className="text-xl font-bold">{credits}</p>
-              </div>
-            </CardContent>
-          </Card> */}
           <Link href="/pricing">
             <Button variant="outline" className="gap-2 text-black hover:bg-white/70">
               <Coins className="h-4 w-4" /> Buy Credits
@@ -190,7 +181,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
+            <CardTitle className="text-base font-medium">Total Videos</CardTitle>
             <Film className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -200,7 +191,7 @@ export default function DashboardPage() {
         </Card>
         <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Processing</CardTitle>
+            <CardTitle className="text-base font-medium">Processing</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -210,33 +201,76 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">Videos currently being processed</p>
           </CardContent>
         </Card>
-        <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Credits</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-4 flex items-center gap-2">
-            <Coins className="h-5 w-5 text-yellow-500" />
-            <div>
-              <p className="text-xl font-bold">{credits}</p>
-            </div>
-          </CardContent>
-        </Card>
+        {subscription && (
+          <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Subscription end</CardTitle>
+              <div className="flex items-center gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">
+                          {formatDistanceToNow(new Date(subscription.end_date), { addSuffix: true })}
+                        </span>
+                        {new Date(subscription.end_date).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000 && (
+                          <AlertCircle className="h-4 w-4 text-red-600" />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{format(new Date(subscription.end_date), 'MMMM do, yyyy')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Credits Remaining:</span>
+                <span className="font-bold text-base">{subscription.credits_remaining}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="col-span-1">
+        <Card className="col-span-1 bg-neutral-950 text-white border-0 shadow-md shadow-neutral-300">
           <CardHeader>
             <CardTitle>Recent Videos</CardTitle>
             <CardDescription>Your recently created videos</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed">
-              <div className="flex flex-col items-center gap-1 text-center">
-                <Video className="h-10 w-10 text-muted-foreground" />
-                <p className="text-sm font-medium">No videos yet</p>
-                <p className="text-xs text-muted-foreground">Create your first video to see it here</p>
+            {videos.length === 0 ? (
+              <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed">
+                <div className="flex flex-col items-center gap-1 text-center">
+                  <Video className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-sm font-medium">No videos yet</p>
+                  <p className="text-xs text-muted-foreground">Create your first video to see it here</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto">
+                {videos.slice(0, 3).map((video) => (
+                  <div key={video.id} className="w-40 flex-shrink-0">
+                    <div className="aspect-[3/4] bg-neutral-950 border rounded-md overflow-hidden mb-2">
+                      <video
+                        src={video.video_url}
+                        className="h-full w-full object-cover"
+                        controls={false}
+                      />
+                    </div>
+                    <div className="text-sm font-medium truncate" title={video.title || 'Untitled Video'}>
+                      {video.title || 'Untitled Video'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {format(new Date(video.created_at), 'MMM d, yyyy')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -259,8 +293,8 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-      {subscription && (
-        <div className="mb-6 p-4 bg-white rounded-lg shadow">
+      {/* {subscription && (
+        <div className="mb-6 p-4 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold">Subscription Status</h3>
@@ -291,7 +325,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   )
 }

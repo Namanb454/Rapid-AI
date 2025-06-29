@@ -4,9 +4,10 @@ export async function generateVideoFromNarration(
   script: string,
   voice: string,
   timeLimit: string,
-  fontName?: string,
-  baseFontColor: string = "white",
-  highlightWordColor: string = "yellow"
+  userId: string,
+  fontName: string,
+  baseFontColor: string,
+  highlightWordColor: string
 ): Promise<any> {
   const response: any = await fetch(`${process.env.NEXT_PUBLIC_RAILWAY_API_KEY}/generate-short/`, {
     method: "POST",
@@ -21,8 +22,8 @@ export async function generateVideoFromNarration(
       },
       "voice": voice,
       "time_limit": timeLimit,
-      "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "font_name": "Anton-Regular.ttf",
+      "user_id": userId,
+      "font_name": fontName,
       "base_font_color": baseFontColor,
       "highlight_word_color": highlightWordColor
     }),
