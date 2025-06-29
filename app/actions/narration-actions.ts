@@ -8,7 +8,7 @@ export async function generateVideoFromNarration(
   baseFontColor: string = "white",
   highlightWordColor: string = "yellow"
 ): Promise<any> {
-  const response: any = await fetch(`${process.env.NEXT_PUBLIC_RaILWAY_API_KEY}/generate-short/`, {
+  const response: any = await fetch(`${process.env.NEXT_PUBLIC_RAILWAY_API_KEY}/generate-short/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

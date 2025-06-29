@@ -12,7 +12,6 @@ import { easeInOut, motion } from 'framer-motion';
 import { FeatureData } from './data';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth-context';
@@ -20,6 +19,7 @@ import { createClient } from '@/utils/supabase/client';
 import { SubscriptionService } from '@/lib/subscription';
 import { SubscriptionPlan } from '@/types/subscription';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/hooks/use-toast';
 
 export default function Home() {
   const router = useRouter();
@@ -80,23 +80,30 @@ export default function Home() {
           credits: selectedPlan.credits_per_month,
           userId: user.id,
           priceId: selectedPlan.stripe_price_id,
+          planId: selectedPlan.id,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        toast({
+          title: 'Error',
+          description: errorData.error || 'Failed to create checkout session',
+          variant: 'destructive',
+        });
         throw new Error(errorData.error || 'Failed to create checkout session');
       }
 
       const { url } = await response.json();
       window.location.href = url;
     } catch (error: any) {
-      console.error('Payment error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to redirect to payment. Please try again.",
-        variant: "destructive",
-      });
+      if (!error.handled) {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to redirect to payment. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(null);
     }

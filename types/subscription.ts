@@ -1,3 +1,6 @@
+export type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
+export type TransactionType = 'credit' | 'debit';
+
 export interface SubscriptionPlan {
     id: string;
     name: string;
@@ -6,8 +9,8 @@ export interface SubscriptionPlan {
     credits_per_month: number;
     duration_months: number;
     is_annual: boolean;
-    stripe_price_id: string;
-    stripe_product_id: string;
+    stripe_price_id: string | null;
+    stripe_product_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -19,7 +22,7 @@ export interface UserSubscription {
     start_date: string;
     end_date: string;
     credits_remaining: number;
-    status: 'active' | 'expired' | 'cancelled';
+    status: SubscriptionStatus;
     created_at: string;
     updated_at: string;
 }
@@ -27,12 +30,9 @@ export interface UserSubscription {
 export interface CreditTransaction {
     id: string;
     user_id: string;
-    subscription_id: string;
+    subscription_id: string | null;
     amount: number;
-    type: 'purchase' | 'usage' | 'refund';
+    type: TransactionType;
     description: string;
     created_at: string;
-}
-
-export type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
-export type CreditTransactionType = 'purchase' | 'usage' | 'refund'; 
+} 

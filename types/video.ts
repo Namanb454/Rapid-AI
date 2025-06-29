@@ -82,3 +82,19 @@ export interface VideoApiResponse {
   url: string
   [key: string]: any
 }
+
+export type VideoStatus = 'processing' | 'completed' | 'failed';
+
+export interface Video {
+  id: string;
+  created_at: string;
+  user_id: string;
+  video_url: string;
+  title: string | null;
+  description: string | null;
+  duration: string;
+  status: VideoStatus;
+  font_name: string | null;
+  base_font_color: string | null;
+  highlight_word_color: string | null;
+}

@@ -89,7 +89,7 @@ export class SubscriptionService {
             user_id: userId,
             subscription_id: data.id,
             amount: plan.credits_per_month,
-            type: 'purchase',
+            type: 'credit',
             description: `Initial credits from ${plan.name} subscription`
         });
 
@@ -119,14 +119,14 @@ export class SubscriptionService {
             user_id: userId,
             subscription_id: subscription.id,
             amount: -amount,
-            type: 'usage',
+            type: 'debit',
             description
         });
 
         return true;
     }
 
-    private async createCreditTransaction(transaction: Omit<CreditTransaction, 'id' | 'created_at'>): Promise<void> {
+    async createCreditTransaction(transaction: Omit<CreditTransaction, 'id' | 'created_at'>): Promise<void> {
         const { error } = await this.supabase
             .from('credit_transactions')
             .insert(transaction);

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { SubscriptionService } from '@/lib/subscription';
 
 export default function PaymentSuccess() {
   const [status, setStatus] = useState<'loading' | 'succeeded' | 'failed'>('loading');
@@ -58,6 +59,8 @@ export default function PaymentSuccess() {
                 user_id: userId,
                 amount: purchasedCredits,
                 stripe_payment_id: session.id,
+                plan_id: session.metadata.planId || null,
+                credits_purchased: purchasedCredits,
               });
 
             if (insertCreditError) throw insertCreditError;
@@ -86,6 +89,34 @@ export default function PaymentSuccess() {
               }, { onConflict: 'id' }) as { error: any };
 
             if (updateProfileError) throw updateProfileError;
+
+            // --- NEW LOGIC: Update user_subscriptions and credit_transactions ---
+            const subscriptionService = new SubscriptionService(supabase);
+            if (session.metadata.planId) {
+              // Create a new subscription (this will also create a credit transaction)
+              try {
+                await subscriptionService.createSubscription(userId, session.metadata.planId);
+              } catch (e) {
+                // If already has active subscription, just create a credit transaction for the purchase
+                await subscriptionService.createCreditTransaction({
+                  user_id: userId,
+                  subscription_id: null,
+                  amount: purchasedCredits,
+                  type: 'credit',
+                  description: `Purchased ${purchasedCredits} credits (plan: ${session.metadata.planName})`,
+                });
+              }
+            } else {
+              // No planId, just a credit purchase
+              await subscriptionService.createCreditTransaction({
+                user_id: userId,
+                subscription_id: null,
+                amount: purchasedCredits,
+                type: 'credit',
+                description: `Purchased ${purchasedCredits} credits`,
+              });
+            }
+            // --- END NEW LOGIC ---
           }
 
           setStatus('succeeded');

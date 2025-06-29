@@ -9,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: Request) {
   try {
-    const { amount, planName, credits, userId, priceId } = await req.json();
+    const { amount, planName, credits, userId, priceId, planId } = await req.json();
     const supabase = await createClient();
     const subscriptionService = new SubscriptionService(supabase);
 
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
         userId: userId,
         credits: credits,
         planName: planName,
+        planId: planId,
         originalAmount: amount,
       },
     });

@@ -90,7 +90,7 @@ export async function storeVideoInSupabase(
 }
 
 export async function generateNarration(scriptPrompt: string, timeLimit: string): Promise<any> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_RaILWAY_API_KEY}/generate-narration/`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_RAILWAY_API_KEY}/generate-narration/`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -152,7 +152,7 @@ export async function RawVideo(jobId: string): Promise<JobStatusResponse> {
         job_id: jobId
     });
 
-    const response: any = await fetch(`${process.env.NEXT_PUBLIC_STATUS_API_KEY}/raw-video-url-status?${params.toString()}`, {
+    const response: any = await fetch(`${process.env.NEXT_PUBLIC_RAILWAY_API_KEY}/raw-video-url-status?${params.toString()}`, {
         method: 'GET',
         headers: {
             "Content-Type": "application/json",
@@ -179,7 +179,7 @@ export async function CaptionVideo(jobId: string): Promise<JobStatusResponse> {
         job_id: jobId
     });
 
-    const response: any = await fetch(`${process.env.NEXT_PUBLIC_STATUS_API_KEY}/captioned-video-status?${params.toString()}`, {
+    const response: any = await fetch(`${process.env.NEXT_PUBLIC_RAILWAY_API_KEY}/captioned-video-status?${params.toString()}`, {
         method: 'GET',
         headers: {
             "Content-Type": "application/json",
