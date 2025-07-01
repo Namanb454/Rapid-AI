@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { SubscriptionPlan } from '@/types/subscription';
 import { SubscriptionService } from '@/lib/subscription';

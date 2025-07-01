@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation'; // Changed import
 import { createClient } from '@/utils/supabase/client';
 import { SubscriptionService } from '@/lib/subscription';
 
-export default function PaymentSuccess() {
+function PaymentSuccessContent() {
   const [status, setStatus] = useState<'loading' | 'succeeded' | 'failed'>('loading');
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -152,4 +152,18 @@ export default function PaymentSuccess() {
       </div>
     </div>
   );
-} 
+}
+
+export default function PaymentSuccess() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-md text-center">
+          <div className="text-blue-600">Loading...</div>
+        </div>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
+  );
+}

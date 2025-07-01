@@ -1,6 +1,7 @@
 import Footer from "@/components/Footer"
 import Navbar from "@/components/Navbar"
 import type React from "react"
+import { Suspense } from 'react'
 
 export default function AuthLayout({
     children,
@@ -11,7 +12,9 @@ export default function AuthLayout({
         <div>
             <Navbar />
             <main>
-                {children}
+                <Suspense>
+                    {children}
+                </Suspense>
             </main>
             <Footer />
         </div>
