@@ -2,7 +2,7 @@
 
 import FeatureCard from '@/components/FeatureCard';
 import TestimonialCard from '@/components/TestimonialCard';
-import PricingPlan from '@/components/PricingPlan';
+import PricingSection from '@/components/PricingSection';
 import Hero from '@/components/Hero';
 import HowItWorks from '@/components/HowItWorks';
 import Example from '@/components/Example';
@@ -10,104 +10,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { easeInOut, motion } from 'framer-motion';
 import { FeatureData } from './data';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/auth-context';
-import { createClient } from '@/utils/supabase/client';
-import { SubscriptionService } from '@/lib/subscription';
-import { SubscriptionPlan } from '@/types/subscription';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/hooks/use-toast';
+
 
 export default function Home() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const supabase = createClient();
-  const subscriptionService = new SubscriptionService();
-
-  const [loading, setLoading] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-
-  useEffect(() => {
-    loadSubscriptionPlans();
-  }, []);
-
-  const loadSubscriptionPlans = async () => {
-    try {
-      const plans = await subscriptionService.getSubscriptionPlans();
-      setSubscriptionPlans(plans);
-    } catch (error) {
-      console.error('Failed to load subscription plans:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load subscription plans",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const filteredPlans = subscriptionPlans.filter(plan => 
-    billingCycle === 'monthly' ? !plan.is_annual : plan.is_annual
-  );
-
-  const handlePurchase = (plan: SubscriptionPlan) => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    setSelectedPlan(plan);
-    setShowPurchaseModal(true);
-  };
-
-  const confirmPurchase = async () => {
-    if (!selectedPlan || !user) return;
-
-    setLoading(selectedPlan.name);
-    try {
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: selectedPlan.price * 100,
-          planName: selectedPlan.name,
-          credits: selectedPlan.credits_per_month,
-          userId: user.id,
-          priceId: selectedPlan.stripe_price_id,
-          planId: selectedPlan.id,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        toast({
-          title: 'Error',
-          description: errorData.error || 'Failed to create checkout session',
-          variant: 'destructive',
-        });
-        throw new Error(errorData.error || 'Failed to create checkout session');
-      }
-
-      const { url } = await response.json();
-      window.location.href = url;
-    } catch (error: any) {
-      if (!error.handled) {
-        toast({
-          title: 'Error',
-          description: error.message || 'Failed to redirect to payment. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } finally {
-      setLoading(null);
-    }
-  };
 
   const containerVariants = {
     hidden: { y: 200, opacity: 0 },
@@ -246,94 +151,15 @@ export default function Home() {
         {/* Pricing Section */}
         <section id="pricing" className="py-20 px-4 md:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
-              <p className="text-xl text-neutral-300 max-w-2xl mx-auto">
-                Choose the plan that works best for your video creation needs
-              </p>
-            </div>
-
-            <Tabs defaultValue="monthly" className="w-full" onValueChange={(value) => setBillingCycle(value as 'monthly' | 'annual')}>
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8 rounded-full overflow-hidden">
-                <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                <TabsTrigger value="annual">Annual</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="monthly">
-                <div className="grid md:grid-cols-3 gap-8">
-                  {filteredPlans.map((plan) => (
-                    <PricingPlan
-                      key={plan.id}
-                      title={plan.name}
-                      price={plan.price.toString()}
-                      description={plan.description}
-                      features={[
-                        `${plan.credits_per_month} video generations`,
-                        plan.name === "Pro" ? "24/7 support" : "Priority support",
-                        plan.name === "Pro" ? "Premium quality" : "High quality"
-                      ]}
-                      popular={plan.name === "Pro"}
-                      onSelectPlan={() => handlePurchase(plan)}
-                      buttonText={loading === plan.name ? "Redirecting..." : "Get Started"}
-                      disabled={loading !== null}
-                    />
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="annual">
-                <div className="grid md:grid-cols-3 gap-8">
-                  {filteredPlans.map((plan) => (
-                    <PricingPlan
-                      key={plan.id}
-                      title={plan.name}
-                      price={plan.price.toString()}
-                      description={plan.description}
-                      features={[
-                        `${plan.credits_per_month} video generations`,
-                        plan.name === "Pro" ? "24/7 support" : "Priority support",
-                        plan.name === "Pro" ? "Premium quality" : "High quality",
-                        "Save 20% with annual billing"
-                      ]}
-                      popular={plan.name === "Pro"}
-                      onSelectPlan={() => handlePurchase(plan)}
-                      buttonText={loading === plan.name ? "Redirecting..." : "Get Started"}
-                      disabled={loading !== null}
-                    />
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+            <PricingSection 
+              showModal={true}
+              title="Simple, Transparent Pricing"
+              subtitle="Choose the plan that works best for your video creation needs"
+            />
           </div>
         </section>
       </div>
       <Footer />
-      <Dialog open={showPurchaseModal} onOpenChange={setShowPurchaseModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Purchase</DialogTitle>
-            <DialogDescription>
-              You are about to purchase {selectedPlan?.credits_per_month} credits for ${selectedPlan?.price}.
-              You will be redirected to a secure payment page.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowPurchaseModal(false)}
-              disabled={loading !== null}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={confirmPurchase}
-              disabled={loading !== null}
-            >
-              {loading ? "Redirecting..." : "Proceed to Payment"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
 
   );

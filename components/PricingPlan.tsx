@@ -3,7 +3,7 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { CheckCircle } from 'lucide-react';
 
-const PricingPlan = ({ title, price, description, features, popular = false, onSelectPlan, buttonText = "Get Started", disabled = false }: {
+const PricingPlan = ({ title, price, description, features, popular = false, onSelectPlan, buttonText = "Get Started", disabled = false, annualPrice }: {
     title: string;
     price: string;
     description: string;
@@ -12,6 +12,7 @@ const PricingPlan = ({ title, price, description, features, popular = false, onS
     onSelectPlan: () => void;
     buttonText?: string;
     disabled?: boolean;
+    annualPrice?: string;
 }) => {
     return (
         <Card className={`relative overflow-hidden rounded-3xl ${popular ? 'border-indigo-500 bg-transparent' : 'border-neutral-800 bg-transparent scale-95'}`}>
@@ -28,7 +29,13 @@ const PricingPlan = ({ title, price, description, features, popular = false, onS
                     <span className="text-3xl font-bold text-white">${price}</span>
                     <span className="text-neutral-400 ml-1">/month</span>
                 </div>
-                <p className="text-neutral-400 mb-6 h-10">{description}</p>
+                <p className="text-neutral-400 mb-4">{description}</p>
+
+                {annualPrice && (
+                    <div className="mb-4">
+                        <span className="text-neutral-200 textsm">${annualPrice} billed annually</span>
+                    </div>
+                )}
                 <Button
                     variant={popular ? "outline" : "default"}
                     className="w-full mb-6"
