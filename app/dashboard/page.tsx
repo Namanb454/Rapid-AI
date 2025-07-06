@@ -166,7 +166,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Welcome to your dashboard</p>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/pricing">
+          <Link href="/dashboard/subscription">
             <Button variant="outline" className="gap-2 text-black hover:bg-white/70">
               <Coins className="h-4 w-4" /> Buy Credits
             </Button>

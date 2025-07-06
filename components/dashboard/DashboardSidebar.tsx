@@ -14,7 +14,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context"
-import { Home, Video, History, Settings, LogOut, Menu, X, ChartBarIcon, Cog, VideoIcon, LayoutDashboardIcon, Plus, LogOutIcon } from "lucide-react"
+import { Home, Video, History, Settings, LogOut, Menu, X, ChartBarIcon, Cog, VideoIcon, LayoutDashboardIcon, Plus, LogOutIcon, CreditCard } from "lucide-react"
 import { useState } from "react"
 import { DialogTitle } from "@radix-ui/react-dialog"
 
@@ -38,6 +38,11 @@ export function DashboardSidebar({ className }: SidebarProps) {
       icon: <VideoIcon />,
       label: "Create Video",
       href: "/dashboard/create",
+    },
+    {
+      icon: <CreditCard />,
+      label: "Subscription",
+      href: "/dashboard/subscription",
     },
   ];
 
