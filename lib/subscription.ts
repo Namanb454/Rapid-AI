@@ -25,13 +25,12 @@ export class SubscriptionService {
             .select('*')
             .eq('user_id', userId)
             .eq('status', 'active')
-            .single();
+            .order('end_date', { ascending: false })
+            .limit(1);
 
-        if (error) {
-            if (error.code === 'PGRST116') return null; // No rows returned
-            throw error;
-        }
-        return data;
+        if (error) throw error;
+        if (data && data.length > 0) return data[0];
+        return null;
     }
 
     async hasActiveSubscription(userId: string): Promise<boolean> {
@@ -48,12 +47,6 @@ export class SubscriptionService {
     }
 
     async createSubscription(userId: string, planId: string): Promise<UserSubscription> {
-        // Check for active subscription
-        const hasActive = await this.hasActiveSubscription(userId);
-        if (hasActive) {
-            throw new Error('You already have an active subscription. Please wait until your current subscription expires before purchasing a new one.');
-        }
-
         // Get plan details
         const { data: plan, error: planError } = await this.supabase
             .from('subscription_plans')
@@ -63,12 +56,35 @@ export class SubscriptionService {
 
         if (planError) throw planError;
 
-        // Calculate end date
+        // Get current active subscription (if any)
+        const currentSubscription = await this.getUserSubscription(userId);
+        
+        // Calculate new subscription details
         const startDate = new Date();
         const endDate = new Date();
         endDate.setMonth(endDate.getMonth() + plan.duration_months);
+        
+        let totalCredits = plan.credits_per_month;
+        let creditTransactionDescription = `Initial credits from ${plan.name} subscription`;
+        
+        // If user has an active subscription, accumulate credits and handle time calculation
+        if (currentSubscription) {
+            // Add remaining credits from current subscription
+            totalCredits += currentSubscription.credits_remaining;
+            creditTransactionDescription = `Plan upgrade: ${currentSubscription.credits_remaining} credits carried over + ${plan.credits_per_month} new credits from ${plan.name}`;
+        }
 
-        // Create subscription
+        // Cancel ALL previous active subscriptions for this user
+        await this.supabase
+            .from('user_subscriptions')
+            .update({ status: 'cancelled' })
+            .eq('user_id', userId)
+            .eq('status', 'active');
+
+        // Log the total credits value
+        console.log(`[createSubscription] Creating new subscription for user ${userId} with totalCredits:`, totalCredits);
+
+        // Create new subscription
         const { data, error } = await this.supabase
             .from('user_subscriptions')
             .insert({
@@ -76,7 +92,7 @@ export class SubscriptionService {
                 plan_id: planId,
                 start_date: startDate.toISOString(),
                 end_date: endDate.toISOString(),
-                credits_remaining: plan.credits_per_month,
+                credits_remaining: totalCredits,
                 status: 'active'
             })
             .select()
@@ -90,8 +106,14 @@ export class SubscriptionService {
             subscription_id: data.id,
             amount: plan.credits_per_month,
             type: 'credit',
-            description: `Initial credits from ${plan.name} subscription`
+            description: creditTransactionDescription
         });
+
+        // Fetch the new active subscription and update profile credits from it
+        const newActiveSubscription = await this.getUserSubscription(userId);
+        if (newActiveSubscription) {
+            await this.updateProfileCredits(userId, newActiveSubscription.credits_remaining);
+        }
 
         return data;
     }
@@ -104,15 +126,20 @@ export class SubscriptionService {
             throw new Error('Insufficient credits');
         }
 
+        const newCreditBalance = subscription.credits_remaining - amount;
+
         // Update subscription credits
         const { error: updateError } = await this.supabase
             .from('user_subscriptions')
             .update({
-                credits_remaining: subscription.credits_remaining - amount
+                credits_remaining: newCreditBalance
             })
             .eq('id', subscription.id);
 
         if (updateError) throw updateError;
+
+        // Update profiles table with new credit balance
+        await this.updateProfileCredits(userId, newCreditBalance);
 
         // Create credit transaction
         await this.createCreditTransaction({
@@ -143,5 +170,93 @@ export class SubscriptionService {
 
         if (error) throw error;
         return data;
+    }
+
+    async updateProfileCredits(userId: string, totalCredits: number): Promise<void> {
+        console.log(`Updating profile credits for user ${userId} to ${totalCredits}`);
+        
+        // First, try to update existing profile
+        const { data: updateData, error: updateError } = await this.supabase
+            .from('profiles')
+            .update({ total_credits: totalCredits })
+            .eq('id', userId)
+            .select();
+
+        console.log('Update result:', { updateData, updateError });
+
+        // If profile doesn't exist, create it
+        if (updateError && updateError.code === 'PGRST116') {
+            console.log('Profile not found, creating new profile');
+            const { data: insertData, error: insertError } = await this.supabase
+                .from('profiles')
+                .insert({
+                    id: userId,
+                    total_credits: totalCredits
+                })
+                .select();
+
+            console.log('Insert result:', { insertData, insertError });
+            if (insertError) throw insertError;
+        } else if (updateError) {
+            console.error('Error updating profile:', updateError);
+            throw updateError;
+        }
+    }
+
+    async syncUserCredits(userId: string): Promise<void> {
+        console.log(`Syncing credits for user ${userId}`);
+        
+        // Get user's active subscription
+        const subscription = await this.getUserSubscription(userId);
+        console.log('Current subscription:', subscription);
+        
+        if (subscription) {
+            // Sync subscription credits to profiles table
+            console.log(`Syncing ${subscription.credits_remaining} credits to profiles table`);
+            await this.updateProfileCredits(userId, subscription.credits_remaining);
+        } else {
+            // If no active subscription, set credits to 0
+            console.log('No active subscription, setting credits to 0');
+            await this.updateProfileCredits(userId, 0);
+        }
+    }
+
+    // Debug method to manually sync credits
+    async debugSyncCredits(userId: string): Promise<any> {
+        console.log('=== DEBUG SYNC CREDITS ===');
+        
+        // Check if user exists in profiles
+        const { data: profileData, error: profileError } = await this.supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+        
+        console.log('Profile data:', profileData);
+        console.log('Profile error:', profileError);
+        
+        // Check subscription
+        const subscription = await this.getUserSubscription(userId);
+        console.log('Subscription data:', subscription);
+        
+        // Try to sync
+        await this.syncUserCredits(userId);
+        
+        // Check profile again
+        const { data: updatedProfile, error: updatedError } = await this.supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+        
+        console.log('Updated profile:', updatedProfile);
+        console.log('Updated error:', updatedError);
+        
+        return {
+            originalProfile: profileData,
+            subscription,
+            updatedProfile,
+            errors: { profileError, updatedError }
+        };
     }
 } 

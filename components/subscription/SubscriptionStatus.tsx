@@ -46,11 +46,20 @@ export function SubscriptionStatus() {
         return (
             <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
                 <CardHeader>
-                    <CardTitle>No Active Subscription</CardTitle>
+                    <CardTitle>Manage Subscription</CardTitle>
                     <CardDescription>
-                        Subscribe to a plan to start using credits
+                        You do not have an active subscription. Subscribe to a plan to start using credits.
                     </CardDescription>
                 </CardHeader>
+                <CardContent>
+                    <div className="flex justify-center mt-4">
+                        <a href="#plans">
+                            <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded transition">
+                                View Plans & Subscribe
+                            </button>
+                        </a>
+                    </div>
+                </CardContent>
             </Card>
         );
     }

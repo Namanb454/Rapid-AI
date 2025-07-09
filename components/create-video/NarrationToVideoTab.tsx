@@ -16,6 +16,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, Dr
 import { AlertCircle, Loader2, Video, Wand2 } from "lucide-react"
 import { FontName, ColorName } from "@/types/video"
 import { useToast } from "@/hooks/use-toast"
+import { SubscriptionService } from "@/lib/subscription"
 
 // Character limits based on duration ranges
 const DURATION_CHAR_LIMITS: Record<string, number> = {
@@ -37,6 +38,8 @@ export default function NarrationToVideoTab({
   setLoading
 }: SharedVideoProps): JSX.Element {
   const { user } = useAuth()
+  const subscriptionService = new SubscriptionService();
+  const [credits, setCredits] = useState<number | null>(null);
   const [script, setScript] = useState<string>("")
   const [charCount, setCharCount] = useState<number>(0)
   const [charLimit, setCharLimit] = useState<number>(DURATION_CHAR_LIMITS[duration] || 750)
@@ -54,6 +57,20 @@ export default function NarrationToVideoTab({
   const [fontBaseColor, setFontBaseColor] = useState<ColorName>("white")
   const [fontHighlightColor, setFontHighlightColor] = useState<ColorName>("indigo")
   const { toast } = useToast()
+
+  // Fetch credits on mount
+  useEffect(() => {
+    const fetchCredits = async () => {
+      if (!user) return;
+      try {
+        const sub = await subscriptionService.getUserSubscription(user.id);
+        setCredits(sub?.credits_remaining ?? 0);
+      } catch {
+        setCredits(0);
+      }
+    };
+    fetchCredits();
+  }, [user]);
 
   // Update character limit when duration changes
   useEffect(() => {
@@ -182,6 +199,14 @@ export default function NarrationToVideoTab({
 
   const handleGenerateVideo = async (): Promise<void> => {
     if (!script || !user) return
+    if (credits === 0) {
+      toast({
+        title: "Insufficient Credits",
+        description: "You do not have enough credits to generate a video. Please purchase more credits.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setLoading(true)
     setError("")

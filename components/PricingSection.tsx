@@ -35,10 +35,16 @@ export default function PricingSection({
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
 
   useEffect(() => {
     loadSubscriptionPlans();
-  }, []);
+    if (user && user.id) {
+      loadCurrentSubscription();
+    } else {
+      setCurrentSubscription(null);
+    }
+  }, [user]);
 
   const loadSubscriptionPlans = async () => {
     try {
@@ -54,8 +60,24 @@ export default function PricingSection({
     }
   };
 
+  const loadCurrentSubscription = async () => {
+    try {
+      if (!user || !user.id) return;
+      const sub = await subscriptionService.getUserSubscription(user.id);
+      setCurrentSubscription(sub);
+    } catch (error) {
+      // ignore for now
+    }
+  };
+
   const monthlyPlans = subscriptionPlans.filter(plan => !plan.is_annual);
   const annualPlans = subscriptionPlans.filter(plan => plan.is_annual);
+
+  // Find the current plan details if the user has a subscription
+  const currentPlan = currentSubscription && subscriptionPlans.length > 0
+    ? subscriptionPlans.find(p => p.id === currentSubscription.plan_id)
+    : null;
+  const currentIsAnnual = currentPlan ? currentPlan.is_annual : false;
 
   const handlePurchase = (plan: SubscriptionPlan) => {
     if (!user) {
@@ -156,8 +178,8 @@ export default function PricingSection({
                 ]}
                 popular={plan.name === "Pro"}
                 onSelectPlan={() => handlePurchase(plan)}
-                buttonText={loading === plan.name ? "Redirecting..." : "Get Started"}
-                disabled={loading !== null}
+                buttonText={currentIsAnnual ? "Not Available" : (loading === plan.name ? "Redirecting..." : "Get Started")}
+                disabled={currentIsAnnual || loading !== null}
               />
             ))}
           </div>

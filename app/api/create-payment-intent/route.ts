@@ -13,15 +13,6 @@ export async function POST(req: Request) {
     const supabase = await createClient();
     const subscriptionService = new SubscriptionService(supabase);
 
-    // Check for active subscription
-    const hasActive = await subscriptionService.hasActiveSubscription(userId);
-    if (hasActive) {
-      return NextResponse.json(
-        { error: 'You already have an active subscription. Please wait until your current subscription expires before purchasing a new one.' },
-        { status: 400 }
-      );
-    }
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [

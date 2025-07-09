@@ -46,22 +46,19 @@ export default function DashboardPage() {
         if (videosError) throw videosError
         setVideos(videosData || [])
 
-        // Fetch total credits from profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('total_credits')
-          .eq('id', user.id)
-          .single()
-
-        if (profileError && profileError.code !== 'PGRST116') {
-          // PGRST116 means no rows found (expected for new users)
-          throw profileError
-        }
-        setCredits(profileData?.total_credits || 0)
-
         // Fetch subscription
         const userSubscription = await subscriptionService.getUserSubscription(user.id)
         setSubscription(userSubscription)
+
+        // Sync credits with profiles table and set credits state
+        if (userSubscription) {
+          await subscriptionService.syncUserCredits(user.id)
+          setCredits(userSubscription.credits_remaining)
+        } else {
+          // If no subscription, set credits to 0
+          await subscriptionService.syncUserCredits(user.id)
+          setCredits(0)
+        }
 
       } catch (error) {
         console.error('Error fetching data:', error)
@@ -201,39 +198,16 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">Videos currently being processed</p>
           </CardContent>
         </Card>
-        {subscription && (
-          <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Subscription end</CardTitle>
-              <div className="flex items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          {formatDistanceToNow(new Date(subscription.end_date), { addSuffix: true })}
-                        </span>
-                        {new Date(subscription.end_date).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000 && (
-                          <AlertCircle className="h-4 w-4 text-red-600" />
-                        )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{format(new Date(subscription.end_date), 'MMMM do, yyyy')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Credits Remaining:</span>
-                <span className="font-bold text-base">{subscription.credits_remaining}</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <Card className="bg-neutral-950 border-none shadow-md shadow-neutral-300 text-white">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-base font-medium">Available Credits</CardTitle>
+            <Coins className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{credits}</div>
+            <p className="text-xs text-muted-foreground">Credits available for video creation</p>
+          </CardContent>
+        </Card>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="col-span-1 bg-neutral-950 text-white border-0 shadow-md shadow-neutral-300">

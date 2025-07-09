@@ -1,6 +1,6 @@
 "use client"
 
-import { JSX, useState } from "react"
+import { JSX, useState, useEffect } from "react"
 import { SharedVideoProps } from "@/types/video"
 import VideoForm from "./VideoForm"
 import VideoPreview from "./VideoPreview"
@@ -16,6 +16,7 @@ import { FontName, ColorName } from "@/types/video"
 import Example from "../Example"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { SubscriptionService } from "@/lib/subscription"
 
 export default function TextToVideoTab({
   duration,
@@ -48,10 +49,26 @@ export default function TextToVideoTab({
   const [fontBaseColor, setFontBaseColor] = useState<ColorName>("white")
   const [fontHighlightColor, setFontHighlightColor] = useState<ColorName>("indigo")
   const { toast } = useToast()
+  const subscriptionService = new SubscriptionService();
+  const [credits, setCredits] = useState<number | null>(null);
+
+  // Fetch credits on mount
+  useEffect(() => {
+    const fetchCredits = async () => {
+      if (!user) return;
+      try {
+        const sub = await subscriptionService.getUserSubscription(user.id);
+        setCredits(sub?.credits_remaining ?? 0);
+      } catch {
+        setCredits(0);
+      }
+    };
+    fetchCredits();
+  }, [user]);
 
   const pollJobStatus = async (jobId: string): Promise<any> => {
-    const POLLING_INTERVAL = 4000 // 4 seconds
-    const MAX_POLLING_TIME = 3 * 60 * 1000 // 3 minutes in milliseconds
+    // const POLLING_INTERVAL = 4000 // 4 seconds
+    // const MAX_POLLING_TIME = 3 * 60 * 1000 // 3 minutes in milliseconds
     const startTime = Date.now()
 
     setIsVideoLoading(true)
@@ -66,16 +83,16 @@ export default function TextToVideoTab({
       const checkStatus = async () => {
         try {
           // Check if we've exceeded the time limit
-          if (Date.now() - startTime > MAX_POLLING_TIME) {
-            setError("Video generation timed out after 3 minutes. Please try again.")
-            toast({
-              title: "Video generation failed",
-              description: "Try again, there might be an issue in generating video. Your credit will not be deducted.",
-              variant: "destructive"
-            })
-            reject(new Error("Video generation timed out after 3 minutes"))
-            return
-          }
+          // if (Date.now() - startTime > MAX_POLLING_TIME) {
+          //   setError("Video generation timed out after 3 minutes. Please try again.")
+          //   toast({
+          //     title: "Video generation failed",
+          //     description: "Try again, there might be an issue in generating video. Your credit will not be deducted.",
+          //     variant: "destructive"
+          //   })
+          //   reject(new Error("Video generation timed out after 3 minutes"))
+          //   return
+          // }
 
           const data = await RawVideo(jobId)
           console.log("Raw Video Status:", data.status)
@@ -109,9 +126,10 @@ export default function TextToVideoTab({
               setVideoGenerationStage("Caption failed, but raw video is available")
               resolve({ url: rawVideoUrl })
             }
-          } else {
-            setTimeout(checkStatus, POLLING_INTERVAL)
           }
+          //  else {
+          //   setTimeout(checkStatus, POLLING_INTERVAL)
+          // }
         } catch (err) {
           reject(err)
         }
@@ -176,7 +194,14 @@ export default function TextToVideoTab({
 
   const handleGenerateVideo = async (): Promise<void> => {
     if (!script || !user) return
-
+    if (credits === 0) {
+      toast({
+        title: "Insufficient Credits",
+        description: "You do not have enough credits to generate a video. Please purchase more credits.",
+        variant: "destructive"
+      });
+      return;
+    }
     setLoading(true)
     setError("")
     setGenerated(false)

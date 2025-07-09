@@ -65,31 +65,6 @@ function PaymentSuccessContent() {
 
             if (insertCreditError) throw insertCreditError;
 
-            // Update the total_credits in the profiles table
-            const { data: profile, error: fetchProfileError } = await supabase
-              .from('profiles')
-              .select('total_credits')
-              .eq('id', userId)
-              .maybeSingle() as { data: { total_credits: number } | null; error: any };
-
-            if (fetchProfileError) {
-              throw fetchProfileError;
-            }
-
-            let newTotalCredits = purchasedCredits;
-            if (profile) {
-              newTotalCredits = profile.total_credits + purchasedCredits;
-            }
-
-            const { error: updateProfileError } = await supabase
-              .from('profiles')
-              .upsert({
-                id: userId,
-                total_credits: newTotalCredits,
-              }, { onConflict: 'id' }) as { error: any };
-
-            if (updateProfileError) throw updateProfileError;
-
             // --- NEW LOGIC: Update user_subscriptions and credit_transactions ---
             const subscriptionService = new SubscriptionService(supabase);
             if (session.metadata.planId) {
