@@ -14,9 +14,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context"
-import { Home, Video, History, Settings, LogOut, Menu, X, ChartBarIcon, Cog, VideoIcon, LayoutDashboardIcon, Plus, LogOutIcon, CreditCard } from "lucide-react"
-import { useState } from "react"
-import { DialogTitle } from "@radix-ui/react-dialog"
+import { VideoIcon, LayoutDashboardIcon, Plus, LogOutIcon, CreditCard } from "lucide-react"
 
 interface SidebarProps {
   className?: string

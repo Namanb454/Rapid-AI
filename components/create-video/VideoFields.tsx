@@ -13,20 +13,11 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function VideoFields({
-    textareaLabel,
-    textareaPlaceholder,
-    textareaValue,
-    onTextareaChange,
     duration,
     setDuration,
     voice,
     setVoice,
     error,
-    onSubmit,
-    isSubmitDisabled,
-    loading,
-    title,
-    description,
     fontName,
     setFontName,
     fontBaseColor,

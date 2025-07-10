@@ -127,9 +127,6 @@ export default function TextToVideoTab({
               resolve({ url: rawVideoUrl })
             }
           }
-          //  else {
-          //   setTimeout(checkStatus, POLLING_INTERVAL)
-          // }
         } catch (err) {
           reject(err)
         }

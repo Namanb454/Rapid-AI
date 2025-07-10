@@ -3,20 +3,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowRight, Clock, Film, Plus, Video, Wand2, Coins } from "lucide-react"
+import {  Clock, Film, Plus, Video, Wand2, Coins } from "lucide-react"
 import { useEffect, useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { Database } from "@/types/supabase"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatDistanceToNow, format } from 'date-fns';
-import { AlertCircle } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { format } from 'date-fns';
 import { UserSubscription } from '@/types/subscription';
 import { SubscriptionService } from '@/lib/subscription';
 

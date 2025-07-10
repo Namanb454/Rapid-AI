@@ -1,5 +1,4 @@
 import PricingSection from '@/components/PricingSection';
-import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
@@ -18,7 +17,6 @@ export default function SubscriptionPage() {
             
             <div className="space-y-8">
                 <SubscriptionStatus />
-                {/* <SubscriptionPlans /> */}
                 <PricingSection/>
             </div>
         </div>
