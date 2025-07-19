@@ -1,44 +1,21 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
+import { SubscriptionService } from '@/lib/subscription'
+
+function createServerSupabaseClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 interface JobStatusResponse {
     status: string;
     video_url?: string;
     raw_video_url?: string;
     captioned_video_url?: string;
-}
-
-async function checkAndDeductCredits(userId: string): Promise<boolean> {
-    const supabase = await createClient()
-
-    // Get user's current credits from the profiles table
-    const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('total_credits')
-        .eq('id', userId)
-        .single()
-
-    if (profileError || !profileData) {
-        throw new Error('Failed to fetch user profile or credits')
-    }
-
-    if (profileData.total_credits < 1) {
-        throw new Error('Insufficient credits')
-    }
-
-    // Deduct one credit from the profiles table
-    const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ total_credits: profileData.total_credits - 1 })
-        .eq('id', userId)
-
-    if (updateError) {
-        throw new Error('Failed to deduct credits')
-    }
-
-    return true
 }
 
 export async function storeVideoInSupabase(
@@ -51,11 +28,12 @@ export async function storeVideoInSupabase(
     baseFontColor?: string,
     highlightWordColor?: string
 ): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createServerSupabaseClient()
+    const subscriptionService = new SubscriptionService(supabase)
 
     try {
-        // Check and deduct credits before storing video
-        await checkAndDeductCredits(userId)
+        // Check and deduct credits from subscription before storing video
+        await subscriptionService.useCredits(userId, 1, 'Video generation')
 
         const { data, error } = await supabase
             .from('videos')
@@ -89,7 +67,7 @@ export async function storeVideoInSupabase(
     }
 }
 
-export async function generateNarration(scriptPrompt: string, timeLimit: string): Promise<any> {
+export async function generateNarration(scriptPrompt: string, timeLimit: string, userId: string): Promise<any> {
     const response = await fetch(`${process.env.NEXT_PUBLIC_RAILWAY_API_KEY}/generate-narration/`, {
         method: "POST",
         headers: {
@@ -98,7 +76,7 @@ export async function generateNarration(scriptPrompt: string, timeLimit: string)
         body: JSON.stringify({
             "script_prompt": scriptPrompt,
             "time_limit": timeLimit,
-            "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            "user_id": userId
         }),
     });
 

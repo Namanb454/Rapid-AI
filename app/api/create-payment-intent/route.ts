@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@/utils/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
+function createServerSupabaseClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 import { SubscriptionService } from '@/lib/subscription';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -10,7 +17,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(req: Request) {
   try {
     const { amount, planName, credits, userId, priceId, planId } = await req.json();
-    const supabase = await createClient();
+    const supabase = createServerSupabaseClient();
     const subscriptionService = new SubscriptionService(supabase);
 
     const session = await stripe.checkout.sessions.create({

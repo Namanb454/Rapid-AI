@@ -67,7 +67,7 @@ export default function TextToVideoTab({
   }, [user]);
 
   const pollJobStatus = async (jobId: string): Promise<any> => {
-    // const POLLING_INTERVAL = 4000 // 4 seconds
+    const POLLING_INTERVAL = 4000 // 4 seconds
     // const MAX_POLLING_TIME = 3 * 60 * 1000 // 3 minutes in milliseconds
     const startTime = Date.now()
 
@@ -127,6 +127,9 @@ export default function TextToVideoTab({
               resolve({ url: rawVideoUrl })
             }
           }
+          else {
+            setTimeout(checkStatus, POLLING_INTERVAL)
+          }
         } catch (err) {
           reject(err)
         }
@@ -170,14 +173,14 @@ export default function TextToVideoTab({
   }
 
   const handleGenerateNarration = async (): Promise<void> => {
-    if (!prompt) return
+    if (!prompt || !user) return
 
     setLoading(true)
     setError("")
     setGenerated(false)
 
     try {
-      const narrationData = await generateNarration(prompt, duration)
+      const narrationData: any = await generateNarration(prompt, duration, user.id)
       setScript(narrationData)
       setNarration(narrationData.script)
       setShowNarrationEditor(true)

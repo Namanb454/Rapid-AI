@@ -94,7 +94,7 @@ export default function NarrationToVideoTab({
 
   const pollJobStatus = async (jobId: string): Promise<any> => {
     const POLLING_INTERVAL = 4000 // 4 seconds
-    const MAX_POLLING_TIME = 3 * 60 * 1000 // 3 minutes in milliseconds
+    // const MAX_POLLING_TIME = 3 * 60 * 1000 // 3 minutes in milliseconds
     const startTime = Date.now()
 
     setIsVideoLoading(true)
@@ -109,16 +109,16 @@ export default function NarrationToVideoTab({
       const checkStatus = async () => {
         try {
           // Check if we've exceeded the time limit
-          if (Date.now() - startTime > MAX_POLLING_TIME) {
-            setError("Video generation timed out after 3 minutes. Please try again.")
-            toast({
-              title: "Video generation failed",
-              description: "Try again, there might be an issue in generating video. Your credit will not be deducted.",
-              variant: "destructive"
-            })
-            reject(new Error("Video generation timed out after 3 minutes"))
-            return
-          }
+          // if (Date.now() - startTime > MAX_POLLING_TIME) {
+          //   setError("Video generation timed out after 3 minutes. Please try again.")
+          //   toast({
+          //     title: "Video generation failed",
+          //     description: "Try again, there might be an issue in generating video. Your credit will not be deducted.",
+          //     variant: "destructive"
+          //   })
+          //   reject(new Error("Video generation timed out after 3 minutes"))
+          //   return
+          // }
 
           const data = await RawVideo(jobId)
           console.log("Raw Video Status:", data.status)
@@ -256,24 +256,30 @@ export default function NarrationToVideoTab({
         throw new Error("No video URL or job ID returned from API");
       }
 
-      // Store video in Supabase - using the current videoUrl which should be set either by polling or direct
+      // Store video in Supabase - use the URL returned from polling or direct API response
       try {
-        // Wait a bit to ensure we have the latest URL
-        setVideoGenerationStage("Saving video to database...")
-        setTimeout(async () => {
-          if (videoUrl) {
-            await storeVideoInSupabase(
-              videoUrl,
-              user.id,
-              duration,
-              script.substring(0, 50), // Using first 50 chars of script as title
-              script // Using full script as description
-            );
-            console.log("Video stored in Supabase successfully");
-            setVideoGenerationStage("Video saved successfully")
-            setIsVideoLoading(false);
-          }
-        }, 1000);
+        setVideoGenerationStage("Saving video to database...");
+        let finalVideoUrl = null;
+        if (videoData.job_id) {
+          const pollResult = await pollJobStatus(videoData.job_id);
+          finalVideoUrl = pollResult.url || pollResult.raw_video_url || pollResult.captioned_video_url;
+        } else if (videoData.url) {
+          finalVideoUrl = videoData.url;
+        }
+        if (finalVideoUrl) {
+          await storeVideoInSupabase(
+            finalVideoUrl,
+            user.id,
+            duration,
+            script.substring(0, 50), // Using first 50 chars of script as title
+            script // Using full script as description
+          );
+          console.log("Video stored in Supabase successfully");
+          setVideoGenerationStage("Video saved successfully");
+          setIsVideoLoading(false);
+        } else {
+          setError("Failed to save video: No video URL found");
+        }
       } catch (storeErr) {
         console.error("Error storing video in Supabase:", storeErr);
         setError(`Video generated but failed to save: ${storeErr instanceof Error ? storeErr.message : "Unknown error"}`);
