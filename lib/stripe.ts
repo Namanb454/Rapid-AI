@@ -1,6 +1,6 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-export const stripePromise = loadStripe("pk_test_51RMAcLRpIUfdSJVVANyVwKoMeoXCpEjFkFUWdc80g70cud9PGS2sMzkoi48eYBYu9wFVgk96QjsCywvUDfF3sC0p00CEjZ3r4Z");
+export const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_API_KEY as string);
 
 export const formatAmountForStripe = (amount: number, currency: string): number => {
   const numberFormat = new Intl.NumberFormat(['en-US'], {
